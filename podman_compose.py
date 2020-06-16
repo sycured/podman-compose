@@ -292,9 +292,7 @@ def trans(func):
 
 @trans
 def tr_identity(project_name, services, given_containers):
-    containers = []
-    for cnt in given_containers:
-        containers.append(dict(cnt))
+    containers = [dict(cnt) for cnt in given_containers]
     return [], containers
 
 
@@ -452,7 +450,7 @@ def mount_desc_to_volume_args(compose, mount_desc, srv_name, cnt_name):
     source = mount_desc.get("source", None)
     target = mount_desc["target"]
     opts = []
-    if mount_type != 'bind' and mount_type != 'volume':
+    if mount_type not in ['bind', 'volume']:
         raise ValueError("unknown mount type:"+mount_type)
     propagations = set(filteri(mount_desc.get(mount_type, {}).get("propagation", "").split(',')))
     if mount_type != 'bind':
@@ -893,7 +891,7 @@ class PodmanCompose:
         if services is None:
             services = {}
             print("WARNING: No services defined")
-		
+
         # NOTE: maybe add "extends.service" to _deps at this stage
         flat_deps(services, with_extends=True)
         service_names = sorted([ (len(srv["_deps"]), name) for name, srv in services.items() ])
@@ -927,10 +925,7 @@ class PodmanCompose:
                     service_name=service_name,
                     num=num,
                 )
-                if num == 1:
-                    name = service_desc.get("container_name", name0)
-                else:
-                    name = name0
+                name = service_desc.get("container_name", name0) if num == 1 else name0
                 container_names_by_service[service_name].append(name)
                 # print(service_name,service_desc)
                 cnt = dict(name=name, num=num,
@@ -1103,9 +1098,9 @@ def create_pods(compose, args):
         compose.podman.run(podman_args)
 
 def up_specific(compose, args):
-    deps = []
     if not args.no_deps:
-        for service in args.services:
+        deps = []
+        for _ in args.services:
             deps.extend([])
     # args.always_recreate_deps
     print("services", args.services)
